@@ -181,7 +181,7 @@ p4a.local_recipes = %(source.dir)s/contrib/p4a
 [buildozer]
 
 # (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
-log_level = 0
+log_level = 1
 
 
 # -----------------------------------------------------------------------------
