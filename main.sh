@@ -1,23 +1,48 @@
 #!/usr/bin/env bash
 
+# Import
+. ./lib/Log.sh
+. ./lib/APT-GET.sh
+. lib/Work.sh
 
-sudo apt-get update &&\
-sudo apt-get install -y software-properties-common &&\
-sudo add-apt-repository ppa:deadsnakes/ppa &&\
-sudo apt-get install -y python3.7 &&\
-sudo apt-get install -y python3-pip python3-testresources &&\
-sudo -H python3 -m pip install --upgrade setuptools pip &&\
-git clone https://github.com/akhavr/electrum-dash.git &&\
-cp ./base/make_apk ./electrum-dash/contrib/make_apk &&\
-cp ./base/buildozer.spec ./electrum-dash/electrum_dash/gui/kivy/tools/buildozer.spec &&\
-sudo docker build -t electrum-android-builder-img ./base/ &&\
-./electrum-dash/contrib/make_locale &&\
-./electrum-dash/contrib/make_packages &&\
-cd electrum-dash &&\
-sudo docker run -it --rm \
-    --name electrum-android-builder-cont \
-    -v $PWD:/home/user/wspace/electrum \
-    -v ~/.keystore:/home/user/.keystore \
-    --workdir /home/user/wspace/electrum \
-    electrum-android-builder-img \
-    ./contrib/make_apk
+# init
+ElectrumDashRepository="https://github.com/akhavr/electrum-dash.git"
+RepositoryDirName="electrum-dash"
+chanFilePath="./base"
+chanMakeApkFilePath="${chanFilePath}/make_apk"
+oriMakeApkFilePath="./${RepositoryDirName}/contrib/make_apk"
+chanBuildozerSpecPath="${chanFilePath}/buildozer.spec"
+oriBuildozerSpecPath="./${RepositoryDirName}/electrum_dash/gui/kivy/tools/buildozer.spec"
+makeLocalePath="./${RepositoryDirName}/contrib/make_locale"
+makePackagesPath="./${RepositoryDirName}/contrib/make_packages"
+dockerApkBuilderImgName="electrum-android-builder-img"
+
+function main(){
+
+    LogInfo "< Electrum-Dash-APK-Builder >"
+
+    AptCheck "python3.7"
+    AptCheck "python3-pip"
+    AptCheck "python3-testresources"
+    WorkPythonPip "setuptools"
+    WorkPythonPip "pip"
+    AptCheck "docker"
+
+    WorkRemove ${RepositoryDirName}
+
+    WorkGitClone ${ElectrumDashRepository} ${RepositoryDirName}
+
+    WorkCp ${chanMakeApkFilePath} ${oriMakeApkFilePath}
+
+    WorkCp ${chanBuildozerSpecPath} ${oriBuildozerSpecPath}
+
+    WorkdockerImgCheck ${dockerApkBuilderImgName} ${chanFilePath}
+
+    WorkShellScript ${makeLocalePath}
+
+    WorkShellScript ${makePackagesPath}
+
+    WorkDockerApkBuild ${RepositoryDirName} ${dockerApkBuilderImgName}
+}
+
+main
